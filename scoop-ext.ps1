@@ -13,7 +13,11 @@ param(
     [string]$CustomPath
 )
 
+Get-ChildItem "$PSScriptRoot/lib" | Where-Object { $_.Name -like "*.ps1" } | ForEach-Object { . $_.FullName }
 $scoopRoot = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE "scoop" }
+$scoopApps = Join-Path $scoopRoot "apps"
+$scoopShims = Join-Path $scoopRoot "shims"
+# entries of scoop-ext
 $STORAGE_DIR = Join-Path $scoopRoot "custom_store"
 $APPS_FILE = Join-Path $STORAGE_DIR "apps.json"
 $BIN_FILE = Join-Path $STORAGE_DIR "bin.json"
