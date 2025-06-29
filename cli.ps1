@@ -27,7 +27,7 @@ Usage: scoop-ext install <app_id> [--path <install_path>] [scoop_args]
 '@
 
 $uninstallHelp = @'
-Usage: scoop-ext uninstall <app_id> 
+Usage: scoop-ext uninstall <app_id> [scoop_args]
 '@
 
 function Show-Help {

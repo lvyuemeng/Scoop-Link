@@ -43,7 +43,7 @@ function persist_link {
 		
 		Write-Debug "[symlink]: $src_full -> $target_full"
 		if (Test-Path $src_full) {
-			Remove-Item -LiteralPath $src_full
+			Remove-Item -LiteralPath $src_full -Recurse
 		}
 		New-Item -ItemType SymbolicLink -Path $src_full -Target $target_full -Force | Out-Null
 	}
