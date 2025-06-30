@@ -1,63 +1,48 @@
 . "$PSScriptRoot/context.ps1"
 
 $helpCommands = "-h", "--help", "/?"
-$commands = "install", "uninstall"
+$commands = @{
+	"install"   = "install"
+	"add"       = "install"
+	"uninstall" = "uninstall"
+	"remove"    = "uninstall"
+	"rm"        = "uninstall"
+	"move"		= "move"
+	"mv" 		= "move"
+	"list"      = "list"
+	"ls"        = "list"
+}
 
-$mainHelp = @'
+$helpContext = @{
+    main = @'
 Usage: scoop-ext <command> [options/arguments]
-
 Commands:
   install   <app_id> [--path <install_path>] [scoop_args]   - Install an application to a custom path.
   uninstall <app_id>                                        - Uninstall an application.
-  move      <app_id> --to <new_path>                        - Move an installed application to a new custom path.
+  move      <app_id> [--path <move_path]                    - Move an installed application to a new custom path.
   list                                                      - List scoop-ext managed applications.
-  info      <app_id>                                        - Show details about a scoop-ext managed application.
-
 Common Options:
   -h, --help, /? Display help for a command.
-
 Examples:
   scoop-ext install 7zip --path D:\MyPortableApps\7Zip
   scoop-ext uninstall 7zip
   scoop-ext list
 '@
-
-$installHelp = @'
-Usage: scoop-ext install <app_id> [--path <install_path>] [scoop_args]
-'@
-
-$uninstallHelp = @'
-Usage: scoop-ext uninstall <app_id> [scoop_args]
-'@
+    install = "Usage: scoop-ext install <app_id> [--path <install_path>] [scoop_args]"
+    uninstall = "Usage: scoop-ext uninstall <app_id> [scoop_args]"
+	move = "Usuage: scoop-ext move <app_id> [--path <move_path>] [--global/-g]"
+}
 
 function Show-Help {
 	param (
 		[string]$Context = "main"
 	)
-	
-	switch ($Context.ToLower()) {
-		"main" {
-			Write-Host $mainHelp
-		}
-		"install" {
-			Write-Host $installHelp
-		}
-		default {
-			Write-Host "No help found for '$Context'."
-			Write-Host $mainHelp
-		}
+	$help = $helpContext[$Context]
+	if (-Not $help) {
+		Write-Error "No help found for '$Context'."
+		Write-Host $helpContext["main"]
 	}
-}
-
-function Get-Handler {
-	param (
-		[string]$command
-	)
-	$path = "$PSScriptRoot/exec/$command.ps1"
-	if (-Not (Test-Path $path)) {
-		Write-Error "Unknown command: '$command'. Use 'scoop-ext help' for help." -ErrorAction Stop
-	}
-	return $path
+	Write-Host $help
 }
 
 # entry
@@ -67,20 +52,28 @@ function Invoke-ScoopExt {
 		[Parameter(ValueFromRemainingArguments = $true)]
 		$args
 	)
-	$command = $command.ToLower()
-	if ((-Not $command) -or $command -in $helpCommands) {
+	Write-Debug "[entry]: command: $command"
+	Write-Debug "[entry]: args: $args"
+	
+	if (-Not $command -or $command -in $helpCommands) {
 		Show-Help
 		return
 	}
 
-	if (($args | Where-Object { $_ -in $helpCommands }) -or $args.Count -eq 0) {
-		Show-Help -Context $command
+	$canonical = $commands[$command.ToLower()]
+	Write-Debug "[entry]: canonical: $conanical"
+	if (-Not $canonical) {
+		Write-Error "Unknown command: '$command'."
+		Show-Help
 		return
 	}
 
-	Write-Debug "[entry]: command: $command"
-	Write-Debug "[entry]: args: $args"
-
-	$handle = Get-Handler $command
+	if ($args.Count -eq 0 -or ($args | Where-Object { $_ -in $helpCommands })) {
+		Show-Help -Context $canonical
+		return
+	}
+	
+	# conanical is exist
+	$handle = "$PSScriptRoot/exec/$canonical.ps1"
 	Invoke-Expression "$handle $($args -join ' ')"
 }

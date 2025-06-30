@@ -28,7 +28,7 @@ Describe "Route" {
 	}
 }
 
-Describe "Property" {
+Describe "Parse" {
 	It "double-hypen" -Tag "hypen" {
 		function two_hypens {
 			param (
@@ -43,5 +43,11 @@ Describe "Property" {
 		# -f parsed as flag
 		two_hypens --force
 		two_hypens -f
+	}
+	
+	It "opts" -Tag "opts" {
+		$opts = opts "--force","-f" "--force", "something"
+		$opts["--force"] | Should -BeTrue
+		$opts["-f"] | Should -BeFalse
 	}
 }

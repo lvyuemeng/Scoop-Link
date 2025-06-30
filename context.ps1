@@ -12,11 +12,18 @@ function Get-ScoopSubs {
 	param ()
 	
 	$scoop = Get-Scoop
+	$global = if ($env:SCOOP_GLOBAL) {
+		$env:SCOOP_GLOBAL 
+	} 
+	else { 
+		"C:\ProgramData\scoop\apps"
+	}
 	$scoop_subs = @{
-		"apps" = Join-Path $scoop "apps";
+		"apps"    = Join-Path $scoop "apps";
+		"global"  = $global;
 		"buckets" = Join-Path $scoop "buckets";
 		"persist" = Join-Path $scoop "persist";
-		"shims" = Join-Path $scoop "shims";
+		"shims"   = Join-Path $scoop "shims";
 	}
 	
 	return $scoop_subs
@@ -25,7 +32,7 @@ function Get-ScoopSubs {
 function Get-ScoopExtSubs {
 	param(
 		# root path should be "...\<cli root>\"
-		[Parameter(Mandatory=$true)]
+		[Parameter(Mandatory = $true)]
 		[string]$root
 	)
 	
