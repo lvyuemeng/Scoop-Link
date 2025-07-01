@@ -1,5 +1,5 @@
 param(
-	[string]$appName,
+	[string]$appNames,
 	[Parameter(ValueFromRemainingArguments = $true)]
 	$args
 )

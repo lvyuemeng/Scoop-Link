@@ -1,4 +1,10 @@
+param (
+	[Parameter(ValueFromRemainingArguments = $true)]
+	$args
+)
+
 . "$PSScriptRoot/context.ps1"
+. "$PSScriptRoot/lib/parse.ps1"
 
 $helpCommands = "-h", "--help", "/?"
 $commands = @{
@@ -46,7 +52,7 @@ function Show-Help {
 }
 
 # entry
-function Invoke-ScoopExt {
+function Invoke-Entry {
 	param (
 		[string]$command,
 		[Parameter(ValueFromRemainingArguments = $true)]
@@ -61,7 +67,7 @@ function Invoke-ScoopExt {
 	}
 
 	$canonical = $commands[$command.ToLower()]
-	Write-Debug "[entry]: canonical: $conanical"
+	Write-Debug "[entry]: canonical: $canonical"
 	if (-Not $canonical) {
 		Write-Error "Unknown command: '$command'."
 		Show-Help
@@ -75,5 +81,8 @@ function Invoke-ScoopExt {
 	
 	# conanical is exist
 	$handle = "$PSScriptRoot/exec/$canonical.ps1"
-	Invoke-Expression "$handle $($args -join ' ')"
+	Write-Debug "$handle $($args -join ' ')"
+	flatten_exec $handle @args
 }
+
+Invoke-Entry @args

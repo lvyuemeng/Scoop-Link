@@ -7,7 +7,7 @@ param(
     [string]$Command,
     
     [Parameter(Position = 1)]
-    [string]$AppName,
+    [string]$appNames,
     
     [Parameter(Position = 2)]
     [string]$CustomPath
@@ -61,17 +61,17 @@ function Resolve-InstallPath($app, $path) {
 switch ($Command) {
     'install' {
         if (-not $CustomPath) { throw "必须指定CustomPath参数" }
-        $realPath = Resolve-InstallPath $AppName $CustomPath
+        $realPath = Resolve-InstallPath $appNames $CustomPath
         
-        $manifest = Get-Manifest $AppName
+        $manifest = Get-Manifest $appNames
         
-        $tempDir = Join-Path $scoopRoot "apps\$AppName"
+        $tempDir = Join-Path $scoopRoot "apps\$appNames"
         if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
         New-Item -Path $tempDir -ItemType Directory -Force | Out-Null
         
         try {
-            scoop install $AppName --no-cache
-            $versionDir = Get-ChildItem (Join-Path $scoopRoot "apps\$AppName") -Directory |
+            scoop install $appNames --no-cache
+            $versionDir = Get-ChildItem (Join-Path $scoopRoot "apps\$appNames") -Directory |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
         
@@ -122,7 +122,7 @@ switch ($Command) {
                     if (Test-Path $shimPath) { Remove-Item $shimPath -Force }
                     $null = New-Item -ItemType HardLink -Path $shimPath -Target $targetBin -Force
                     $binData[$bin] = @{
-                        App     = $AppName
+                        App     = $appNames
                         Version = $versionDir.Name
                     }
                 }
@@ -130,10 +130,10 @@ switch ($Command) {
             Update-BinData $binData
 
             $apps = Get-AppsData
-            $apps[$AppName] = @{
+            $apps[$appNames] = @{
                 Path      = $realPath
                 Current   = $versionDir.Name
-                Versions  = @($versionDir.Name) + $apps[$AppName].Versions
+                Versions  = @($versionDir.Name) + $apps[$appNames].Versions
                 Installed = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
             }
             Update-AppsData $apps
@@ -147,9 +147,9 @@ switch ($Command) {
     
     'uninstall' {
         $apps = Get-AppsData
-        if (-not $apps.ContainsKey($AppName)) { throw "未找到安装记录" }
+        if (-not $apps.ContainsKey($appNames)) { throw "未找到安装记录" }
 
-        $allVersions = Get-ChildItem (Join-Path $apps[$AppName].Path "*") -Directory
+        $allVersions = Get-ChildItem (Join-Path $apps[$appNames].Path "*") -Directory
 
         if ($CustomPath) {
             $versionToRemove = $CustomPath
@@ -161,22 +161,22 @@ switch ($Command) {
         }
 
         foreach ($version in $versionToRemove) {
-            $versionPath = Join-Path $apps[$AppName].Path $version
+            $versionPath = Join-Path $apps[$appNames].Path $version
             if (Test-Path $versionPath) {
                 Remove-Item $versionPath -Recurse -Force
             }
         }
 
-        if ($apps[$AppName].Current -in $versionToRemove -and $remainingVersions) {
+        if ($apps[$appNames].Current -in $versionToRemove -and $remainingVersions) {
             $newCurrent = $remainingVersions | Sort-Object -Descending | Select-Object -First 1
-            $currentLink = Join-Path $apps[$AppName].Path "current"
+            $currentLink = Join-Path $apps[$appNames].Path "current"
             if (Test-Path $currentLink) { Remove-Item $currentLink -Force }
-            New-Item -ItemType Junction -Path $currentLink -Target (Join-Path $apps[$AppName].Path $newCurrent) -Force
+            New-Item -ItemType Junction -Path $currentLink -Target (Join-Path $apps[$appNames].Path $newCurrent) -Force
         }
         
         $binData = Get-BinData
         $binData.Keys.Clone() | ForEach-Object {
-            if ($binData[$_] -eq $AppName) {
+            if ($binData[$_] -eq $appNames) {
                 $shimPath = Join-Path $scoopRoot "shims\$_"
                 if (Test-Path $shimPath) { Remove-Item $shimPath -Force }
                 $binData.Remove($_)
@@ -184,10 +184,10 @@ switch ($Command) {
         }
         Update-BinData $binData
         
-        $apps.Remove($AppName)
+        $apps.Remove($appNames)
         Update-AppsData $apps
         
-        scoop uninstall $AppName
+        scoop uninstall $appNames
     }
     
     'list' {
@@ -204,6 +204,6 @@ switch ($Command) {
     }
     
     'path' {
-        (Get-AppsData)[$AppName].Path
+        (Get-AppsData)[$appNames].Path
     }
 }

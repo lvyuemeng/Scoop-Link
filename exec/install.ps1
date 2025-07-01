@@ -3,7 +3,7 @@ param(
 		SupportsShouldProcess,
 		ConfirmImpact = "High"
 	)]
-	[string]$appName,
+	[string[]]$appNames,
 	[Alias("p")]
 	[string]$path,
 	[Alias("f")]
@@ -13,9 +13,9 @@ param(
 	$args
 )
 
-. "$PSScriptRoot/../lib/opts.ps1"
+. "$PSScriptRoot/../lib/parse.ps1"
 
-Write-Debug "[install]: appName: $appName"
+Write-Debug "[install]: appNames: $appNames"
 Write-Debug "[install]: path: $path"
 
 $f = if ($Force -and -not $PSBoundParameters.ContainsKey("Confirm")) {
@@ -26,11 +26,13 @@ else {
 }
 Write-Debug "[install]: force: $Force"
 
-$opts = opts "--global", "-g" @args
+Write-Debug "[install]: args: $args"
+$opts, $args = opts "--global", "-g" @args
 $global = $opts["--global"] -or $opts["-g"]
 Write-Debug "[install]: global: $global"
+Write-Debug "[install]: args: $args"
 
-& scoop install $appName @args
+& scoop install @appNames @args
 if ($LASTEXITCODE -ne 0) { 
 	exit $LASTEXITCODE
 }
@@ -41,5 +43,6 @@ if ([string]::IsNullOrEmpty($path)) {
 }
 
 $move = "$PSScriptRoot/move.ps1"
-$global_flag = if ($global) { "--global" }
-Invoke-Expression "$move $appName $path $f $global_flag"
+$global_flag = if ($global) { "--global" } else { "" }
+$force_flag = if ($f) { "-f" } else { "" }
+flatten_exec $move $appNames -Path $path $force_flag $global_flag

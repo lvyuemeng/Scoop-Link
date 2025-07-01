@@ -45,9 +45,73 @@ Describe "Parse" {
 		two_hypens -f
 	}
 	
-	It "opts" -Tag "opts" {
-		$opts = opts "--force","-f" "--force", "something"
+	It "opts something" -Tag "opts1" {
+		$opts, $args = opts "--force", "-f" "--force","isforce", "-someflag", "someval"
 		$opts["--force"] | Should -BeTrue
 		$opts["-f"] | Should -BeFalse
+		Write-Host $args
+		$opts_2, $args = opts "-something" $args
+		Write-Host $args.Count
+	}
+	
+	It "opts nothing" -Tag "opts2" {
+		$args = @()
+		$opts, $args = opts "--force", "-f" @args
+		Write-Host "$($args.Count)"
+	}
+	
+	It "list collision" -Tag "list" {
+		function parse_list {
+			param (
+				[string[]]$appNames,
+				[switch]$Force,
+				[Parameter(ValueFromRemainingArguments = $true)]
+				$args
+			)
+			Write-Host "appNames: $appNames"
+			Write-Host "force: $force"
+			Write-Host "args: $args"
+		}
+		
+		function direct_call {
+			param (
+				[Parameter(ValueFromRemainingArguments = $true)]
+				$args
+			)
+			Write-Host "$args"
+			parse_list @args	
+		}
+		function invoke_call {
+			param (
+				[Parameter(ValueFromRemainingArguments = $true)]
+				$args
+			)
+			$args.ToString()
+			
+			Write-Host "[invoke_call]: $(expand $args)"
+			Invoke-Expression "parse_list $(expand $args)"
+		}
+		
+		function expand {
+			param(
+				[Parameter(ValueFromRemainingArguments = $true)]
+				$args
+			)
+			
+			$format = foreach ($arg in $args) {
+				if (-Not $arg) {
+					""
+				} elseif ($arg -is [array] -or ($arg -is [System.Collections.IEnumerable] -and $arg -isnot [string])) {
+					$arg -join ", "
+				} else {
+					$arg.ToString()
+				}
+			}
+			$format
+		}
+		
+		parse_list app1, app2 "aehhh"
+		direct_call app1, app2 "aehhh"
+		invoke_call app1, app2 "aehhh"
 	}
 }
