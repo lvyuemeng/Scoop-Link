@@ -3,7 +3,7 @@ BeforeAll {
 }
  
 Describe "Manifest" {
-	It "get-manifest" -Tag "rage" {
+	It "get-manifest" -Tag "m-rage" {
 		$json = Get-Manifest "rage"
 		$json | Should -Not -BeNullOrEmpty
 		Write-Host $json
@@ -13,7 +13,7 @@ Describe "Manifest" {
 }
 
 Describe "Route" {
-	It "get-scoop" -Tag "scoop" {
+	It "get-scoop" -Tag "r-scoop" {
 		$scoop = Get-Scoop
 		$scoop | Should -Not -BeNullOrEmpty
 
@@ -21,7 +21,7 @@ Describe "Route" {
 		$scoop_all | Should -Not -BeNullOrEmpty
 		Write-Host $scoop_all
 	}
-	It "get-scoop-ext" -Tag "scoop-ext" {
+	It "get-scoop-ext" -Tag "r-scoope" {
 		$scoop_ext = Get-ScoopExtAll $PSScriptRoot
 		$scoop_ext | Should -Not -BeNullOrEmpty
 		Write-Host $scoop_ext
@@ -29,29 +29,18 @@ Describe "Route" {
 }
 
 Describe "Parse" {
-	It "double-hypen" -Tag "hypen" {
-		function two_hypens {
-			param (
-				[ValidateSet("--force", "-f")]
-				$DashForce
-			)
-			if ($DashForce) {
-				Write-Host "[two_hypens]: raw literal input success"
-			}
-		}
-
-		# -f parsed as flag
-		two_hypens --force
-		two_hypens -f
-	}
-	
 	It "opts something" -Tag "opts1" {
-		$opts, $args = opts "--force", "-f" "--force","isforce", "-someflag", "someval"
+		$list = "--force","isforce", "-someflag", "someval", "-pa", "E:\" 
+		$opts, $list = opts "--force", "-f", "-pa", "--path" $list
 		$opts["--force"] | Should -BeTrue
 		$opts["-f"] | Should -BeFalse
-		Write-Host $args
-		$opts_2, $args = opts "-something" $args
-		Write-Host $args.Count
+		$opts["-pa"] | Should -BeTrue
+		Write-Host $opts
+		Write-Host ($opts["-pa"] ?? $opts["--path"])
+		Write-Host ($opts["--path"] ?? $opts["-pa"])
+
+		$opts_2, $list = opts "-something" $list
+		Write-Host $opts_2
 	}
 	
 	It "opts nothing" -Tag "opts2" {
@@ -60,7 +49,7 @@ Describe "Parse" {
 		Write-Host "$($args.Count)"
 	}
 	
-	It "list collision" -Tag "list" {
+	It "list collision" -Tag "p-list" {
 		function parse_list {
 			param (
 				[string[]]$appNames,

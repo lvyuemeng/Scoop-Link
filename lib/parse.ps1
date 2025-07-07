@@ -47,6 +47,8 @@ function opts {
 	$res, $filter_args
 }
 
+# avoid object[] fuzzy problem in @args splatting
+# flatten args and invoke expression to execute
 function flatten_exec {
 	param(
 		[string]$command,
