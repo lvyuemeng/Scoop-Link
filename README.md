@@ -8,7 +8,7 @@ It use symbolic link to redirect apps location as it supposed to do. If you can'
 
 Currently:
 
-- **There's no update currently!**
+- **Scoop Ext does not support `update` now**
 - It only move the main body of apps.
 - It won't move persist(Usually the location of your personal data) to prevent potential destruction.  
 - It won't move cache which can be cleared by scoop.
