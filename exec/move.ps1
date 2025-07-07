@@ -1,20 +1,21 @@
 param (
+	[CmdletBinding(
+		SupportsShouldProcess,
+		ConfirmImpact = "High"
+	)]
 	[string[]]$appNames,
-	[Alias("p")]
-	[string]$path,
 	[Alias("f")]
 	[switch]$Force,
 	[Parameter(ValueFromRemainingArguments = $true)]
 	$args
 )
 
-. "$PSScriptRoot/../lib/data.ps1"
+. "$PSScriptRoot/../lib/config.ps1"
 . "$PSScriptRoot/../lib/manifest.ps1"
 . "$PSScriptRoot/../lib/parse.ps1"
 . "$PSScriptRoot/../context.ps1"
 
 Write-Debug "[move]: appNames: $appNames"
-Write-Debug "[move]: path: $path"
 
 $f = if ($Force -and -not $PSBoundParameters.ContainsKey("Confirm")) {
 	$true
@@ -25,20 +26,32 @@ else {
 Write-Debug "[move]: force: $Force"
 
 Write-Debug "[move]: args: $args, count: $($args.Count)"
-$opts, $args = opts "--global", "-g" @args
+$opts, $args = opts "--global", "-g", "--path", "-pa" $args
 $global = $opts["--global"] -or $opts["-g"]
+$path = $opts["--path"] ?? $opts["-pa"]
+Write-Debug "[move]: path: $path"
 Write-Debug "[move]: global: $global"
+Write-Debug "[install]: filter args: $args"
 
+# [weight]: no need to check filtered useless args
 # filter args with opts
-Write-Debug "[move]: filtered args: $args, $($args.Count)"
-if ($args.Count -gt 0) {
-	Write-Error "Unknown arguments: $args" -ErrorAction Stop
+# Write-Debug "[move]: filtered args: $args, $($args.Count)"
+# if ($args.Count -gt 0) {
+# 	Write-Error "Unknown arguments: $args" -ErrorAction Stop
+# }
+# 
+if (-Not $appNames) {
+	Show-Help -Context "move"
+	exit 0
 }
 
 function move_app {
 	param (
+		[CmdletBinding()]
 		[string]$appName,
 		[string]$path,
+		[Alias("f")]
+		[switch]$Force,
 		[Alias("g")]
 		[switch]$global
 	)
@@ -77,7 +90,7 @@ function move_app {
 		persist_link $manifest -app_path $new_version -app_persist $app_persist
 
 		# synlink from new version to original version
-		New-Item -ItemType SymbolicLink -Path $version.FullName -Target $new_version -Force:$f -Debug:$DebugPreference | Out-Null
+		New-Item -ItemType SymbolicLink -Path $version.FullName -Target $new_version -Force -Debug:$DebugPreference | Out-Null
 	}
 	catch {
 		& scoop uninstall $appName
@@ -97,7 +110,7 @@ function move_app {
 }
 
 foreach ($appName in $appNames) {
-	move_app $appName $path -global:$global
+	move_app $appName $path -global:$global -Force:$f
 }
 
 
