@@ -4,11 +4,8 @@ BeforeAll {
  
 Describe "Manifest" {
 	It "get-manifest" -Tag "m-rage" {
-		$json = Get-Manifest "rage"
-		$json | Should -Not -BeNullOrEmpty
-		Write-Host $json
-		$bin = $json.bin
-		Write-Host $bin
+		$json = get_manifest "rage"
+		$json.bin | Should -Contain "rage.exe"
 	}
 }
 
@@ -16,40 +13,168 @@ Describe "Route" {
 	It "get-scoop" -Tag "r-scoop" {
 		$scoop = Get-Scoop
 		$scoop | Should -Not -BeNullOrEmpty
+		$scoop | Should -Match "scoop"
 
-		$scoop_all = Get-ScoopAll
+		$scoop_all = Get-ScoopSubs
 		$scoop_all | Should -Not -BeNullOrEmpty
-		Write-Host $scoop_all
+		Test-Path ($scoop_all["apps"]) | Should -BeTrue
+		Test-Path ($scoop_all["persist"]) | Should -BeTrue
+		Test-Path ($scoop_all["global"]) | Should -BeTrue
 	}
+
 	It "get-scoop-ext" -Tag "r-scoope" {
-		$scoop_ext = Get-ScoopExtAll $PSScriptRoot
+		$scoop_ext = Get-ScoopExtSubs "$PSScriptRoot/../"
 		$scoop_ext | Should -Not -BeNullOrEmpty
-		Write-Host $scoop_ext
+		Test-Path ($scoop_ext["apps"]) | Should -BeTrue
+	}
+
+	It "path root" -Tag "r-root" {
+		$root = Join-Path $PWD "../foo"
+		$root = [System.IO.Path]::GetFullPath($root)
+		Write-Host $root
+	}
+}
+
+Describe "Config" {
+	BeforeAll {
+		Mock -CommandName get_inventory -MockWith { @{ local = @{}; global = @{} } }
+		Mock -CommandName set_inventory -MockWith { param($data) $script:saved_config = $data }
+	}
+	
+	BeforeEach {
+		$script:saved_config = @{}
+	}
+	
+	It "with-config-ref" -Tag "c-ref" {
+		with_inventory -Ref {
+			param([ref]$cfg)
+			$cfg.Value["foo"] = "bar"
+		}
+		$saved_config["local"]["foo"] | Should -Be "bar"
+		Assert-MockCalled get_inventory -Times 1
+		Assert-MockCalled set_inventory -Times 1
+	}
+
+	It "with-config" -Tag "c-value" {
+		with_inventory -Global {
+			param($cfg)
+			$cfg["foo"] = "gar"
+			$cfg
+		}
+		
+		$saved_config["global"]["foo"] | Should -Be "gar"
+		Assert-MockCalled get_inventory -Times 1
+		Assert-MockCalled set_inventory -Times 1
+	}
+}
+
+Describe "App" {
+	Context "scoop appsubs" -Tag "a-subs" {
+		BeforeEach {
+			$Script:scoopSubs = @{ apps = 'C:\apps'; persist = 'C:\persist'; global = 'C:\global' } 
+		}
+		It "exist" {
+			Mock -CommandName Test-Path -MockWith { $true }
+			$(scoop_appsub "foo" -sub "app") | Should -Be "C:\apps\foo"
+		}
+		It "not exist" {
+			Mock -CommandName Test-Path -MockWith { $false }
+			# pipe a lazy valued expression
+			{ scoop_appsub "foo" -sub "app" -Exist } | Should -Throw
+			{ scoop_appsub "foo" -sub "persist" -Exist } | Should -Throw
+		}
+	}
+	
+	Context "installed versions" -Tag "a-i-vers" {
+		BeforeEach {
+			Mock -CommandName scoop_appsubs -MockWith {
+				@{ app = 'C:\apps\foo'; persist = 'C:\persist\foo' }
+			}
+		}
+
+		It "exclude current" {
+			$d1 = [System.IO.DirectoryInfo] 'C:\apps\foo\current'
+			$d2 = [System.IO.DirectoryInfo] 'C:\apps\foo\1.0'
+			$d3 = [System.IO.DirectoryInfo] 'C:\apps\foo\2.0'
+			
+			Mock -CommandName Get-ChildItem -MockWith { @($d1, $d2, $d3) }
+			
+			$(installed_versions "foo") | Should -BeExactly @($d2, $d3)
+		}
+	}
+
+	Context "current version" -Tag "a-c-ver" {
+		BeforeEach {
+			Mock -CommandName scoop_appsubs -MockWith {
+				@{ app = 'C:\apps\foo'; persist = 'C:\persist\foo' }
+			}
+
+			$v1 = [pscustomobject]@{
+				Name          = '1.0'
+				FullName      = 'C:\apps\foo\1.0'
+				LastWriteTime = (Get-Date).AddDays(-1)
+			}
+			$v2 = [pscustomobject]@{
+				Name          = '2.0'
+				FullName      = 'C:\apps\foo\2.0'
+				LastWriteTime = (Get-Date)
+			}
+
+			Mock -CommandName installed_versions -MockWith { @($v1, $v2) }
+		}
+
+		It "resolve symlink" {
+			$tg = [pscustomobject]@{ Target = 'C:\apps\foo\1.2.3' }
+			Mock -CommandName Test-Path -MockWith { $true }
+			Mock -CommandName Get-Item -MockWith { $tg }
+			
+			$(cur_version "foo") | Should -BeExactly $tg
+		}
+
+		It "resolve latest version" {
+			Mock -CommandName Test-Path -MockWith { $false }
+			$(cur_version "foo") | Should -BeExactly $v2
+			Assert-MockCalled installed_versions -Times 1
+		}
 	}
 }
 
 Describe "Parse" {
-	It "opts something" -Tag "opts1" {
-		$list = "--force","isforce", "-someflag", "someval", "-pa", "E:\" 
-		$opts, $list = opts "--force", "-f", "-pa", "--path" $list
-		$opts["--force"] | Should -BeTrue
-		$opts["-f"] | Should -BeFalse
-		$opts["-pa"] | Should -BeTrue
-		Write-Host $opts
-		Write-Host ($opts["-pa"] ?? $opts["--path"])
-		Write-Host ($opts["--path"] ?? $opts["-pa"])
+	It "opts something" -Tag "p-some" {
+		$list = "--force", "isforce", "-p", "E:\" , "-foo", "bar"
+		$opts, $list = opts "--force", "-f", "--path" , "-p" $list
+		
+		Write-Host "filtered list1: $list"
 
-		$opts_2, $list = opts "-something" $list
-		Write-Host $opts_2
+		$opts["--force"] | Should -Be "isforce"
+		$opts["-f"] | Should -BeFalse
+		$opts["-p"] | Should -Be "E:\"
+
+		$opts_2, $list = opts "-foo" $list
+
+		Write-Host "filtered list2: $list"
+
+		$opts_2["-foo"] | Should -Be "bar"
+	}
+
+	It "opts something 2" -Tag "p-some-2" {
+		$list = "-pa", "E:\"
+		$opts, $list = opts "--global", "-g", "--path", "-pa" $list
+
+		Write-Host "filtered list1: $list"
+
+		$opts["--global"] | Should -BeFalse
+		$opts["-pa"] | Should -Be "E:\"
 	}
 	
-	It "opts nothing" -Tag "opts2" {
-		$args = @()
-		$opts, $args = opts "--force", "-f" @args
-		Write-Host "$($args.Count)"
+	It "opts nothing" -Tag "p-no" {
+		$list = @()
+		$opts, $list = opts "--force", "-f" $list
+
+		$opts.Count | Should -Be 0
 	}
 	
-	It "list collision" -Tag "p-list" {
+	It "call list-fold" -Tag "p-call" {
 		function parse_list {
 			param (
 				[string[]]$appNames,
@@ -57,9 +182,7 @@ Describe "Parse" {
 				[Parameter(ValueFromRemainingArguments = $true)]
 				$args
 			)
-			Write-Host "appNames: $appNames"
-			Write-Host "force: $force"
-			Write-Host "args: $args"
+			Write-Host "[parse_list]: appNames: $appNames, force: $Force, args: $args"
 		}
 		
 		function direct_call {
@@ -67,21 +190,11 @@ Describe "Parse" {
 				[Parameter(ValueFromRemainingArguments = $true)]
 				$args
 			)
-			Write-Host "$args"
+			Write-Host "direct call:"
 			parse_list @args	
 		}
-		function invoke_call {
-			param (
-				[Parameter(ValueFromRemainingArguments = $true)]
-				$args
-			)
-			$args.ToString()
-			
-			Write-Host "[invoke_call]: $(expand $args)"
-			Invoke-Expression "parse_list $(expand $args)"
-		}
 		
-		function expand {
+		function flatten {
 			param(
 				[Parameter(ValueFromRemainingArguments = $true)]
 				$args
@@ -90,17 +203,27 @@ Describe "Parse" {
 			$format = foreach ($arg in $args) {
 				if (-Not $arg) {
 					""
-				} elseif ($arg -is [array] -or ($arg -is [System.Collections.IEnumerable] -and $arg -isnot [string])) {
+				}
+				elseif ($arg -is [array] -or ($arg -is [System.Collections.IEnumerable] -and $arg -isnot [string])) {
 					$arg -join ", "
-				} else {
+				}
+				else {
 					$arg.ToString()
 				}
 			}
 			$format
 		}
+		function invoke_call {
+			param (
+				[Parameter(ValueFromRemainingArguments = $true)]
+				$args
+			)
+			Write-Host "invoke call:"
+			Invoke-Expression "parse_list $(flatten $args)"
+		}
 		
-		parse_list app1, app2 "aehhh"
-		direct_call app1, app2 "aehhh"
-		invoke_call app1, app2 "aehhh"
+		parse_list app1, app2 "foo"
+		direct_call app1, app2 "foo"
+		invoke_call app1, app2 "foo"
 	}
 }

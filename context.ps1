@@ -31,10 +31,14 @@ function Get-ScoopSubs {
 
 function Get-ScoopExtSubs {
 	param(
-		# root path should be "...\<cli root>\"
+		# root path should be `<cli root>\`
 		[Parameter(Mandatory = $true)]
 		[string]$root
 	)
+	
+	if (-Not (Test-Path $root)) {
+		Write-Error "Scoop-Ext is not found at $root" -ErrorAction Stop
+	}
 	
 	$scoop_ext_subs = @{
 		"apps" = Join-Path $root "apps.json";
