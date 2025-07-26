@@ -40,7 +40,8 @@ function move_app {
 			return
 		}
 		if (-Not (Test-Path $path -PathType Container -IsValid)) {
-			Write-Error "[move]: Provided path '$path' is not a valid directory path" -ErrorAction Stop
+			Write-Error "[move]: Provided path '$path' is not a valid directory path"
+			return
 		}
 		# normalize path
 		$path = [System.IO.Path]::GetFullPath($path)
@@ -49,7 +50,7 @@ function move_app {
 		New-Item -Path $tg_app -ItemType Directory -Debug:$DebugPreference -ErrorAction SilentlyContinue | Out-Null
 		
 		# check if app exists
-		$vers = installed_versions $appName -Global:$global
+		$vers = may_installed_vers $appName -Global:$global
 		if (-Not $vers) {
 			Write-Warning "[move]: app '$appName' is not installed"
 			Write-Warning "[move]: remove app '$appName' from config if exists"
@@ -61,7 +62,7 @@ function move_app {
 			$vers | ForEach-Object {
 				$ver = $_	
 				$tg_ver = Join-Path $tg_app $ver.Name
-				$src_ver = resolve_ver_path $ver
+				$src_ver = resolve_dir $ver
 				if ($src_ver -eq $tg_ver) {
 					Write-Host "[move]: $ver is already symlink to $tg_ver" 
 					return
@@ -83,7 +84,7 @@ function move_app {
 			& scoop uninstall $appName
 			Remove-Item $tg_app -Recurse -Force
 			Write-Error $_
-			Write-Error "Please reinstall the package again by 'scoop-ext install $appName --path $path'."
+			Write-Error "Please reinstall the package again by 'scpl install $appName --path $path'."
 		}
 	}
 }

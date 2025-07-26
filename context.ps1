@@ -1,4 +1,5 @@
 function Get-Scoop {
+	[CmdletBinding()]
 	param ()
 	
 	$scoop = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE "scoop" }
@@ -9,6 +10,7 @@ function Get-Scoop {
 }
 
 function Get-ScoopSubs {
+	[CmdletBinding()]
 	param ()
 	
 	$scoop = Get-Scoop
@@ -16,7 +18,7 @@ function Get-ScoopSubs {
 		$env:SCOOP_GLOBAL 
 	} 
 	else { 
-		"C:\ProgramData\scoop\apps"
+		"$env:ProgramData\scoop\apps"
 	}
 	$scoop_subs = @{
 		"apps"    = Join-Path $scoop "apps";
@@ -30,6 +32,7 @@ function Get-ScoopSubs {
 }
 
 function Get-ScoopExtSubs {
+	[CmdletBinding()]
 	param(
 		# root path should be `<cli root>\`
 		[Parameter(Mandatory = $true)]
