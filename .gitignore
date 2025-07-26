@@ -1,2 +1,7 @@
+# config
 apps.json
 manifest.json
+
+# test
+test_apps/
+test_apps_dst/

@@ -1,50 +1,94 @@
+. "$PSScriptRoot/../context.ps1"
+. "$PSScriptRoot/app.ps1"
+
+<#
+.SYNOPSIS
+	Gets the manifest of an app by `scoop cat`
+.PARAMETER appName 
+	App's name
+#>
 function get_manifest {
 	param (
-		[string]$app
+		[Parameter(Mandatory = $true)]
+		[string]$appName
 	)
-	$manifest = & scoop cat $app | ConvertFrom-Json
-	return $manifest
+	& scoop cat $appName | ConvertFrom-Json 
 }
 
+<#
+.SYNOPSIS
+    Converts a Scoop persist definition to source and target form.
+	User should verify the validity of input
+.PARAMETER persist
+    A string or array representing the persist mapping.
+#>
 function persist_def {
 	param (
+		[Parameter(Mandatory = $true)]
 		$persist
 	)
-	if ($persist -is [Array]) {
-		$source = $persist[0]
-		$target = $persist[1]
+	$src, $tg = if ($persist -is [Array]) {
+		$persist[0], ($persist[1] ?? $persist[0])
 	}
  else {
-		$source = $persist
-		$target = $null
+		$persist, $persist
 	}
-	if (-Not $target) { $target = $source }
-	return $source, $target
+	return $src, $tg
 }
 
-# symlink every app data into persist data
+<#
+.SYNOPSIS
+	Creates symlinks from `tg_ver` to the `appName` persist
+	User should verify the validity of `tg_ver` is a valid version path of `appName`
+.PARAMETER appName
+	App's name
+.PARAMETER path
+	The external installation path of `appName`
+#>
 function persist_link {
 	param (
-		$manifest,
-		[string]$app_path,
-		[string]$app_persist
+		[Parameter(Mandatory = $true)]
+		$appName,
+		[string]$path,
+		[switch]$global
 	)
-
-	if (-Not $manifest.persist) {
+	
+	$cur_ver = may_cur_ver $appName -Global:$global
+	if (-Not $cur_ver) {
 		return
 	}
+	$tg_ver = Join-Path $path "$appName\$($cur_ver.Name)"
 	
-	$persist_entries = if ($manifest.persist -is [string]) { @($manifest.persist) } else { $manifest.persist }
-	
-	$persist_entries | ForEach-Object {
-		$src_rel, $target_rel = persist_def $_
-		$src_full = Join-Path $app_path $src_rel.TrimEnd("/","\")
-		$target_full = Join-Path $app_persist $target_rel.TrimEnd("/","\")
+	Write-Debug "[persist_link]: $tg_ver to $cur_ver"
+
+	$manifest = get_manifest $appName
+	if (-Not $manifest.persist) {
+		Write-Debug "[persist_link]: no persist"
+		return $cur_ver
+	}
+
+	$src_persist = scoop_appsub $appName -sub "persist" -Exist -Global:$global
+	Write-Debug "[persist_link]: src persist: $src_persist"
+	$entries = @($manifest.persist)
+	$entries | ForEach-Object {
+		# TODO: better nomination
+		$src_rel, $tg_rel = persist_def $_
+
+		$src_full = Join-Path $tg_ver $src_rel.TrimEnd("/", "\")
+		$tg_full = Join-Path $src_persist $tg_rel.TrimEnd("/", "\")
 		
-		Write-Debug "[symlink]: $src_full -> $target_full"
+		Write-Debug "[persist_link]: $src_full -> $tg_full"
 		if (Test-Path $src_full) {
+			$src_item = Get-Item -LiteralPath $src_full -Force
+			$resolved = resolve_dir $src_item
+			if ($resolved -eq $tg_full) {
+				Write-Debug "[persist_link]: already linked"
+				return
+			}
 			Remove-Item -LiteralPath $src_full -Recurse
 		}
-		New-Item -ItemType SymbolicLink -Path $src_full -Target $target_full -Force | Out-Null
+		New-Item -ItemType SymbolicLink -Path $src_full -Target $tg_full -Force | Out-Null
 	}
+
+	$cur_ver
 }

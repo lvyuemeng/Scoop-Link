@@ -4,29 +4,19 @@ param(
 		ConfirmImpact = "High"
 	)]
 	[string[]]$appNames,
-	[Alias("f")]
-	[switch]$Force,
-	# scoop args
 	[Parameter(ValueFromRemainingArguments = $true)]
 	$args
 )
 
 . "$PSScriptRoot/../lib/parse.ps1"
 
-Write-Debug "[install]: appNames: $appNames"
-
-$f = if ($Force -and -not $PSBoundParameters.ContainsKey("Confirm")) {
-	$true
-}
-else {
-	$false
-}
-Write-Debug "[install]: force: $Force"
-
-Write-Debug "[move]: args: $args, count: $($args.Count)"
-$opts, $args = opts "--global", "-g", "--path", "-pa" $args
+Write-Debug "[install]: args: $args, count: $($args.Count)"
+$opts, $args = opts "--global", "-g", "-R" $args
 $global = $opts["--global"] -or $opts["-g"]
-$path = $opts["--path"] ?? $opts["-pa"]
+$global_flag = if ($global) { "--global" } else { "" }
+$path = $opts["-R"]
+
+Write-Debug "[install]: appNames: $appNames"
 Write-Debug "[install]: path: $path"
 Write-Debug "[install]: global: $global"
 Write-Debug "[install]: filter args: $args"
@@ -36,7 +26,7 @@ if (-Not $appNames) {
 	exit 0
 }
 
-& scoop install @appNames @args
+& scoop install $appNames @args $global_flag
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # if path is not provided, install to default path
@@ -45,6 +35,4 @@ if ([string]::IsNullOrEmpty($path)) {
 }
 
 $move = "$PSScriptRoot/move.ps1"
-$global_flag = if ($global) { "--global" } else { "" }
-$force_flag = if ($f) { "-f" } else { "" }
-flatten_exec $move $appNames --path $path $force_flag $global_flag
+flatten_exec $move $appNames -R $path $global_flag

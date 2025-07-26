@@ -8,62 +8,45 @@ param (
 
 $helpCommands = "-h", "--help", "/?"
 $commands = @{
-	"install"   = "install"
-	"add"       = "install"
-	"uninstall" = "uninstall"
-	"remove"    = "uninstall"
-	"rm"        = "uninstall"
-	"move"		= "move"
-	"mv" 		= "move"
-	"list"      = "list"
-	"ls"        = "list"
+	"move" = "move"
+	"mv"   = "move"
+	"sync" = "sync"
+	"list" = "list"
+	"ls"   = "list"
 }
 
 $helpContext = @{
-    main = @'
+	main = @'
 Usage: scoop-ext <command> [options/arguments]
 
 Commands:
-  install   <app_id> [--path <install_path>] [scoop_args] - Install an application to a custom path.
-  uninstall <app_id>                                      - Uninstall an application.
-  move      <app_id> [--path <move_path>]                 - Move an installed application to a new custom path.
-  list                                                    - List installed apps with paths.
+  move      <(app,)> [-R <move_path>]		- Move installed apps to a new custom path.
+  sync      <(app,)>|<*>					- Sync apps moved by 'move' command.
+  list      [scoop_args]					- List installed apps with paths.
+  
+Caveat: 
+  - You should install scoop first.
+  - You should use `,` to separate apps due to the parse logic of powershell script.
+  - You should place `<(app,)>` always at the first argument due to the **partial** parse logic.
 
 Common Options:
   -h, --help, /?    Display help for a command.
 
 Examples:
-  scoop-ext install 7zip --path D:\MyPortableApps\7Zip
-  scoop-ext uninstall 7zip
-  scoop-ext list
+  scpl move 7zip -R D:\MyPortableApps
+  scpl sync 7zip
+  scpl list
 '@
-    install = @'
-Usage: scoop-ext install <app_id> [--path/-pa <install_path>] [--force/-f] [scoop_args]
-
-To install an app with path:
-	scoop-ext install 7zip, ripgrep --path D:\MyPortableApps
-
-Caveat: 
-	There's no need to add app names on your installation path, scoop-ext will create automactically.
-	It's necessary to use ',' to separate multiple app names.
-
-Options:
---path/-pa <install_path>   Install app to a custom path.
-'@
-    uninstall = @"
-Usage: scoop-ext uninstall <app_id> [scoop_args]
-
-To uninstall an app:
-	scoop-ext uninstall 7zip
-
-Options:
---path/-pa <install_path>   Install app to a custom path.
-"@
 	move = @"
-Usage: scoop-ext move <app_id> [--path/-pa <move_path>]
+Usage: scpl move <(app,)> [-R <move_path>]
+
+You can move apps multiple times with different paths.
+"@
+	sync = @"
+Usuage: scpl sync <(app,)>|<*>
 "@
 	list = @"
-Usage: scoop-ext list <app_id>
+Usage: scpl list [scoop_args]
 "@
 }
 
@@ -107,7 +90,7 @@ function Invoke-Entry {
 		return
 	}
 	
-	# conanical is exist
+	# Safety: conanical must be exist
 	$handle = "$PSScriptRoot/exec/$normal.ps1"
 	Write-Debug "$handle $($args -join ' ')"
 	flatten_exec $handle @args

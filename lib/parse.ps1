@@ -1,4 +1,15 @@
+<#
+.SYNOPSIS
+	Parse command options greedily
+	It will return a dict of flags and the residual of unknown args
+.PARAMETER flags
+	A list of flags start with '-'
+.PARAMETER args
+	A list of args
+#>
 function opts {
+	[CmdletBinding()]
+	[OutputType([System.Collections.Hashtable], [string[]])]
 	param(
 		[string[]]$flags,
 		[Parameter(ValueFromRemainingArguments = $true)]
@@ -14,10 +25,10 @@ function opts {
 	$i = 0
     
 	while ($i -lt $args.Count) {
-		$current = $args[$i]
+		$cur = $args[$i]
         
 		# flag
-		if ($current.StartsWith('-') -and $current -in $flags) {
+		if ($cur.StartsWith('-') -and $cur -in $flags) {
 			$values = @()
 			$i++
             
@@ -26,20 +37,16 @@ function opts {
 				$values += $args[$i]
 				$i++
 			}
-            
-			if ($values.Count -eq 0) {
-				$res[$current] = $true
+			
+			switch ($values.Count) {
+				0 { $res[$cur] = $true }
+				1 { $res[$cur] = $values[0] }
+				Default { $res[$cur] = $values }
 			}
-			elseif ($values.Count -eq 1) {
-				$res[$current] = $values[0]
-			}
-			else {
-				$res[$current] = $values
-			}
-			# unknown flag or arg
 		}
+		# unknown flag or arg
 		else {
-			$filter_args += $current
+			$filter_args += $cur
 			$i++
 		}
 	}
