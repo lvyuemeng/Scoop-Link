@@ -35,7 +35,7 @@ function scoop_appsub {
 	}
 }
 
-function resolve_ver_path {
+function resolve_dir {
 	[CmdletBinding()]
 	param (
 		[Parameter(Mandatory = $true, Position = 0)]
@@ -51,10 +51,10 @@ function resolve_ver_path {
 		$ver.FullName
 	}
 
-	return $tg
+	$tg
 }
 
-function installed_versions {
+function may_installed_vers {
 	[CmdletBinding()]
 	[OutputType([System.IO.DirectoryInfo])]
 	param (
@@ -73,7 +73,7 @@ function installed_versions {
 	}
 }
 
-function cur_version {
+function may_cur_ver {
 	[CmdletBinding()]
 	[OutputType([System.IO.DirectoryInfo])]
 	param(
@@ -87,7 +87,7 @@ function cur_version {
 		$cur = Join-Path $app "current"
 
 		if (-Not (Test-Path $cur)) {
-			$cur = installed_versions $appName -Global:$global | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+			$cur = may_installed_vers $appName -Global:$global | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 			return $cur
 		}
 

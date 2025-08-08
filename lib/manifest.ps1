@@ -53,7 +53,10 @@ function persist_link {
 		[switch]$global
 	)
 	
-	$cur_ver = cur_version $appName -Global:$global
+	$cur_ver = may_cur_ver $appName -Global:$global
+	if (-Not $cur_ver) {
+		return
+	}
 	$tg_ver = Join-Path $path "$appName\$($cur_ver.Name)"
 	
 	Write-Debug "[persist_link]: $tg_ver to $cur_ver"
@@ -77,14 +80,10 @@ function persist_link {
 		Write-Debug "[persist_link]: $src_full -> $tg_full"
 		if (Test-Path $src_full) {
 			$src_item = Get-Item -LiteralPath $src_full -Force
-			# resolve src whether it is already the target symlink
-			if ($src_item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-				$resolved = $src_item.Target
-
-				if ($resolved -eq $tg_full) {
-					Write-Debug "[persist_link]: already linked"
-					return
-				}
+			$resolved = resolve_dir $src_item
+			if ($resolved -eq $tg_full) {
+				Write-Debug "[persist_link]: already linked"
+				continue
 			}
 			Remove-Item -LiteralPath $src_full -Recurse
 		}

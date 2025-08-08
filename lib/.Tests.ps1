@@ -99,7 +99,7 @@ Describe "App" {
 			
 			Mock -CommandName Get-ChildItem -MockWith { @($d1, $d2, $d3) }
 			
-			$(installed_versions "foo") | Should -BeExactly @($d2, $d3)
+			$(may_installed_vers "foo") | Should -BeExactly @($d2, $d3)
 		}
 	}
 
@@ -120,7 +120,7 @@ Describe "App" {
 				LastWriteTime = (Get-Date)
 			}
 
-			Mock -CommandName installed_versions -MockWith { @($v1, $v2) }
+			Mock -CommandName may_installed_vers -MockWith { @($v1, $v2) }
 		}
 
 		It "resolve symlink" {
@@ -128,13 +128,13 @@ Describe "App" {
 			Mock -CommandName Test-Path -MockWith { $true }
 			Mock -CommandName Get-Item -MockWith { $tg }
 			
-			$(cur_version "foo") | Should -BeExactly $tg
+			$(may_cur_ver "foo") | Should -BeExactly $tg
 		}
 
 		It "resolve latest version" {
 			Mock -CommandName Test-Path -MockWith { $false }
-			$(cur_version "foo") | Should -BeExactly $v2
-			Assert-MockCalled installed_versions -Times 1
+			$(may_cur_ver "foo") | Should -BeExactly $v2
+			Assert-MockCalled may_installed_vers -Times 1
 		}
 	}
 }
@@ -188,9 +188,9 @@ Describe "Parse" {
 		function direct_call {
 			param (
 				[Parameter(ValueFromRemainingArguments = $true)]
-				$args
+				[string[]]$args
 			)
-			Write-Host "direct call:"
+			Write-Host "direct call: $args"
 			parse_list @args	
 		}
 		
@@ -221,9 +221,13 @@ Describe "Parse" {
 			Write-Host "invoke call:"
 			Invoke-Expression "parse_list $(flatten $args)"
 		}
-		
-		parse_list app1, app2 "foo"
-		direct_call app1, app2 "foo"
-		invoke_call app1, app2 "foo"
+		# [parse_list]: appNames: app1 app2, force: True, args: foo
+		# direct call: System.Object[] -Force foo
+		# [parse_list]: appNames: app1 app2, force: False, args: -Force foo
+		# invoke call:
+		# [parse_list]: appNames: app1 app2, force: True, args: foo
+		parse_list app1, app2 -Force "foo"
+		direct_call app1, app2 -Force "foo"
+		invoke_call app1, app2 -Force "foo"
 	}
 }

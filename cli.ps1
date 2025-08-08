@@ -20,33 +20,33 @@ $helpContext = @{
 Usage: scoop-ext <command> [options/arguments]
 
 Commands:
-  move      <[app,]> <-R <move_path>>		- Move installed apps to a new custom path.
-  sync      <[app,]>|<*>					- Sync apps moved by 'move' command.
+  move      <(app,)> [-R <move_path>]		- Move installed apps to a new custom path.
+  sync      <(app,)>|<*>					- Sync apps moved by 'move' command.
   list      [scoop_args]					- List installed apps with paths.
   
 Caveat: 
   - You should install scoop first.
   - You should use `,` to separate apps due to the parse logic of powershell script.
-  - You should place `<[app,]>` always at the first argument due to the **partial** parse logic.
+  - You should place `<(app,)>` always at the first argument due to the **partial** parse logic.
 
 Common Options:
   -h, --help, /?    Display help for a command.
 
 Examples:
-  scoop-ext move 7zip -R D:\MyPortableApps
-  scoop-ext sync 7zip
-  scoop-ext list
+  scpl move 7zip -R D:\MyPortableApps
+  scpl sync 7zip
+  scpl list
 '@
 	move = @"
-Usage: scoop-ext move <[app,]> <-R <move_path>>
+Usage: scpl move <(app,)> [-R <move_path>]
 
 You can move apps multiple times with different paths.
 "@
 	sync = @"
-Usuage: scoop-ext sync <[app,]>|<*>
+Usuage: scpl sync <(app,)>|<*>
 "@
 	list = @"
-Usage: scoop-ext list [scoop_args]
+Usage: scpl list [scoop_args]
 "@
 }
 

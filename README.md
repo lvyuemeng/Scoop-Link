@@ -2,11 +2,13 @@
 	<h1>Scoop Link<h1>
 </div>
 
-Scoop-ext is currently a simple **custom path** management extension of scoop installer.
+Scoop-Link(scpl) currently is a simple **custom path** management extension of scoop installer.
 
 ## What does it do?
 
 It use symbolic link to redirect apps location as it supposed to do. If you can't ensure its safety by my words, you can check its main logic at [move.ps1](lib/move.ps1).
+
+Currently, it use `app.json` in its dir to record the path. If someone could provide a better design, I would like to refactor it. Thus if you **delete** the `apps.json`, you will lose the information about app paths.
 
 Deed:
 
@@ -36,18 +38,23 @@ scpl sync
 
 ## Installation
 
+### Scoop
+
+Currently, you can copy and paste below or check the repo for this [manifest](scoop-link.json):
+
+```bash
+scoop install https://raw.githubusercontent.com/lvyuemeng/Scoop-Link/master/scoop-link.json
+scoop update # update to newest version
+```
+
 ### Manual
 
 You can clone the repo directly and read the help.
 ```shell
-git clone https://github.com/lvyuemeng/Scoop-ext.git \
-cd Scoop-ext \
-.\scoop-ext --help
+git clone https://github.com/lvyuemeng/Scoop-Link.git \
+cd Scoop-Link \
+.\scpl --help
 ```
-
-### Scoop
-
-Currently is not supported and already planned.
 
 ## Why Bother?
 
