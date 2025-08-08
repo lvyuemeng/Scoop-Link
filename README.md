@@ -38,6 +38,15 @@ scpl sync
 
 ## Installation
 
+### Scoop
+
+Currently, you can copy and paste below or check the repo for this [manifest](scoop-link.json):
+
+```bash
+scoop install https://raw.githubusercontent.com/lvyuemeng/Scoop-Link/master/scoop-link.json
+scoop update # update to newest version
+```
+
 ### Manual
 
 You can clone the repo directly and read the help.
@@ -46,10 +55,6 @@ git clone https://github.com/lvyuemeng/Scoop-Link.git \
 cd Scoop-Link \
 .\scpl --help
 ```
-
-### Scoop
-
-Currently is not supported and already planned.
 
 ## Why Bother?
 

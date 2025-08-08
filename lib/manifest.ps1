@@ -83,7 +83,7 @@ function persist_link {
 			$resolved = resolve_dir $src_item
 			if ($resolved -eq $tg_full) {
 				Write-Debug "[persist_link]: already linked"
-				return
+				continue
 			}
 			Remove-Item -LiteralPath $src_full -Recurse
 		}

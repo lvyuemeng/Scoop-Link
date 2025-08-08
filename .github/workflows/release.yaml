@@ -1,0 +1,40 @@
+name: Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  zip-release:
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Zip
+        run: |
+          $name = "scoop-link-${{ env.RELEASE_TAG }}.zip"
+          Write-Host "Creating zip archive: $name"
+          Compress-Archive -Path ./* -DestinationPath $name -CompressionLevel Optimal -Force
+          Write-Host "Verifying zip archive: "
+          Get-Item $name
+
+          echo "ZIP_NAME=$zipFileName" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          body: |
+            ## Download
+            - [scoop-link-${{ env.RELEASE_TAG }}.zip](https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/scoop-link-${{ env.RELEASE_TAG }}.zip)
+            - `scoop install https://raw.githubusercontent.com/lvyuemeng/Scoop-Link/master/scoop-link.json`
+            
+            ---
+            ${{ github.event.release.body }}
+            
+          files: |
+            scoop-link-${{ env.RELEASE_TAG }}.zip
+            
