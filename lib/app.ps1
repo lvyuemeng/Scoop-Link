@@ -5,7 +5,7 @@ function scoop_appsub {
 	[OutputType([System.Collections.Hashtable])]
 	param (
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
-		[string]$appName,
+		[string]$pkg,
 		[Parameter(Mandatory = $true)]
 		[ValidateSet("app", "persist")]
 		[string]$sub,
@@ -22,10 +22,10 @@ function scoop_appsub {
 				else {
 					$Script:scoopSubs["apps"]
 				}
-				Join-Path $base $appName
+				Join-Path $base $pkg
 			}
 			"persist" {
-				Join-Path $Script:scoopSubs["persist"] $appName
+				Join-Path $Script:scoopSubs["persist"] $pkg
 			}
 		}
 		if ($exist -And (-Not (Test-Path $dir))) {
@@ -45,7 +45,7 @@ function resolve_dir {
 	$tg = if ($ver.Attributes -band [IO.FileAttributes]::ReparsePoint) {
 		# If the version is already a symlink
 		# 	retrieve the target path (first layer)
-		# Safety: target path must be a rooted path
+		# Safety: target path must be a full path
 		$ver.Target
 	} else {
 		$ver.FullName
@@ -59,16 +59,16 @@ function may_installed_vers {
 	[OutputType([System.IO.DirectoryInfo])]
 	param (
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
-		[string]$appName,
+		[string]$pkg,
 		[switch]$global
 	)
 
 	process {
-		$app = scoop_appsub $appName -sub "app" -Global:$global
-		if (-Not (Test-Path $app)) {
+		$pkg_dir = scoop_appsub $pkg -sub "app" -Global:$global
+		if (-Not (Test-Path $pkg_dir)) {
 			return @()
 		}
-		$src_vers = Get-ChildItem $app -Directory | Where-Object { $_.Name -ne "current" }
+		$src_vers = Get-ChildItem $pkg_dir -Directory | Where-Object { $_.Name -ne "current" }
 		return $src_vers
 	}
 }
@@ -78,16 +78,16 @@ function may_cur_ver {
 	[OutputType([System.IO.DirectoryInfo])]
 	param(
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
-		[string]$appName,
+		[string]$pkg,
 		[switch]$global
 	)
 	
 	process {
-		$app = scoop_appsub $appName -sub "app" -Global:$global
-		$cur = Join-Path $app "current"
+		$pkg_dir = scoop_appsub $pkg -sub "app" -Global:$global
+		$cur = Join-Path $pkg_dir "current"
 
 		if (-Not (Test-Path $cur)) {
-			$cur = may_installed_vers $appName -Global:$global | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+			$cur = may_installed_vers $pkg -Global:$global | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 			return $cur
 		}
 

@@ -99,7 +99,7 @@ function update_app_inventory {
 	}
 }
 
-function remove_app_inventory {
+function remove_pkg_inventory {
 	[CmdletBinding()]
 	param (
 		[Parameter(Mandatory = $true, Position = 0)]
@@ -113,7 +113,7 @@ function remove_app_inventory {
 		}
 		$app = Join-Path $cfg.Value[$appName].Path $appName
 		if (Test-Path $app) {
-			Write-Debug "[remove_app_inventory]: remove $app"
+			Write-Debug "[remove_pkg_inventory]: remove $app"
 			Remove-Item $app -Recurse -Force
 		}
 		$cfg.Value.Remove($appName)

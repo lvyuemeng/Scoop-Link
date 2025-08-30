@@ -10,9 +10,9 @@
 function get_manifest {
 	param (
 		[Parameter(Mandatory = $true)]
-		[string]$appName
+		[string]$pkg
 	)
-	& scoop cat $appName | ConvertFrom-Json 
+	& scoop cat $pkg | ConvertFrom-Json 
 }
 
 <#
@@ -45,44 +45,43 @@ function persist_def {
 .PARAMETER path
 	The external installation path of `appName`
 #>
-function persist_link {
+function may_persist_link {
 	param (
 		[Parameter(Mandatory = $true)]
-		$appName,
-		[string]$path,
+		$pkg,
 		[switch]$global
 	)
 	
-	$cur_ver = may_cur_ver $appName -Global:$global
+	$cur_ver = may_cur_ver $pkg -Global:$global
 	if (-Not $cur_ver) {
-		return
+		return $null
 	}
-	$tg_ver = Join-Path $path "$appName\$($cur_ver.Name)"
 	
-	Write-Debug "[persist_link]: $tg_ver to $cur_ver"
+	$installed_ver = resolve_dir $cur_ver
+	Write-Debug "[may_persist_link]: resolved version: $installed_ver"
 
-	$manifest = get_manifest $appName
+	$manifest = get_manifest $pkg
 	if (-Not $manifest.persist) {
-		Write-Debug "[persist_link]: no persist"
+		Write-Debug "[may_persist_link]: no persist"
 		return $cur_ver
 	}
 
-	$src_persist = scoop_appsub $appName -sub "persist" -Exist -Global:$global
-	Write-Debug "[persist_link]: src persist: $src_persist"
+	$persist = scoop_appsub $pkg -sub "persist" -Exist -Global:$global
+	Write-Debug "[may_persist_link]: persist: $persist"
 	$entries = @($manifest.persist)
 	$entries | ForEach-Object {
 		# TODO: better nomination
 		$src_rel, $tg_rel = persist_def $_
 
-		$src_full = Join-Path $tg_ver $src_rel.TrimEnd("/", "\")
-		$tg_full = Join-Path $src_persist $tg_rel.TrimEnd("/", "\")
+		$src_full = Join-Path $installed_ver $src_rel.TrimEnd("/", "\")
+		$tg_full = Join-Path $persist $tg_rel.TrimEnd("/", "\")
 		
-		Write-Debug "[persist_link]: $src_full -> $tg_full"
+		Write-Debug "[may_persist_link]: $src_full -> $tg_full"
 		if (Test-Path $src_full) {
 			$src_item = Get-Item -LiteralPath $src_full -Force
 			$resolved = resolve_dir $src_item
 			if ($resolved -eq $tg_full) {
-				Write-Debug "[persist_link]: already linked"
+				Write-Debug "[may_persist_link]: already linked"
 				continue
 			}
 			Remove-Item -LiteralPath $src_full -Recurse
