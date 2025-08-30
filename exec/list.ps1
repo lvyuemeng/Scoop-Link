@@ -1,5 +1,4 @@
 param(
-	[string[]]$appNames,
 	[Parameter(ValueFromRemainingArguments = $true)]
 	$args
 )
@@ -9,9 +8,8 @@ param(
 . "$PSScriptRoot/../context.ps1"
 
 Write-Debug "[list]: args: $args, count: $($args.Count)"
-Write-Debug "[list]: appNames: $appNames"
 
-$infos = & scoop list $appNames @args
+$infos = & scoop list @args
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $apps_config = get_inventory

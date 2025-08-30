@@ -141,36 +141,34 @@ Describe "App" {
 
 Describe "Parse" {
 	It "opts something" -Tag "p-some" {
-		$list = "--force", "isforce", "-p", "E:\" , "-foo", "bar"
-		$opts, $list = opts "--force", "-f", "--path" , "-p" $list
+		$list = "pkg1", "pkg2", "pkg3", "--force", "isforce", "-p", "E:\" , "-foo", "bar"
+		$pkgs, $opts = opts "--force", "-f", "--path" , "-p" $list
 		
 		Write-Host "filtered list1: $list"
 
+		$pkgs | Should -Be "pkg1", "pkg2", "pkg3"
 		$opts["--force"] | Should -Be "isforce"
 		$opts["-f"] | Should -BeFalse
 		$opts["-p"] | Should -Be "E:\"
-
-		$opts_2, $list = opts "-foo" $list
-
-		Write-Host "filtered list2: $list"
-
-		$opts_2["-foo"] | Should -Be "bar"
+		$opts["-foo"] | Should -Be "bar"
 	}
 
 	It "opts something 2" -Tag "p-some-2" {
-		$list = "-pa", "E:\"
-		$opts, $list = opts "--global", "-g", "--path", "-pa" $list
+		$list = "pkg1", "pkg2", "-p", "E:\"
+		$pkgs, $opts = opts "--global", "-g", "--path", "-p" $list
 
 		Write-Host "filtered list1: $list"
 
+		$pkgs | Should -Be "pkg1", "pkg2"
 		$opts["--global"] | Should -BeFalse
-		$opts["-pa"] | Should -Be "E:\"
+		$opts["-p"] | Should -Be "E:\"
 	}
 	
 	It "opts nothing" -Tag "p-no" {
 		$list = @()
-		$opts, $list = opts "--force", "-f" $list
+		$pkgs, $opts = opts "--force", "-f" $list
 
+		$pkgs.Count | Should -Be 0
 		$opts.Count | Should -Be 0
 	}
 	

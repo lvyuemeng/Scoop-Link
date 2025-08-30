@@ -8,7 +8,7 @@ Scoop-Link(scpl) currently is a simple **custom path** management extension of s
 
 It use symbolic link to redirect apps location as it supposed to do. If you can't ensure its safety by my words, you can check its main logic at [move.ps1](lib/move.ps1).
 
-Currently, it use `app.json` in its dir to record the path. If someone could provide a better design, I would like to refactor it. Thus if you **delete** the `apps.json`, you will lose the information about app paths.
+Currently, it use `app.json` in its working directory to record the path. If someone could provide a better design, I would like to refactor it. Thus if you **delete** the `apps.json`, you will **lose** the all information about app paths.
 
 Deed:
 
@@ -18,16 +18,18 @@ Deed:
 
 ## Usage
 
-It provide only two command: `move` and `sync`.
+It provide below commands: `move`, `sync`, `back`.
 
-- `move` will move installed app without breaking scoop logic.
+- `move` will move installed app to your desired place without breaking scoop logic.
 - `sync` will sync the state of `scoop/apps/<app>` in `<your_apps>/<app>` of moved apps for uninstall, update etc...
+- `back` will move installed app back to scoop.
 
 ```bash
 scpl move fd -R "D:\MyApps"
 scpl move fd -R "./MyApps"
 scpl sync fd
-scpl sync 
+scpl sync # sync all moved apps!
+scpl back fd # move app back!
 ```
 
 **Caveat**: 

@@ -12,20 +12,18 @@ param (
 
 Write-Debug "[move]: args: $args, count: $($args.Count)"
 
-$pkgs, $opts = opts "--global", "-g", "-R" $args
+$pkgs, $opts = opts "--global", "-g" $args
 $global = $opts["--global"] -or $opts["-g"]
-$path = $opts["-R"]
 Write-Debug "[move]: appNames: $pkgs"
-Write-Debug "[move]: path: $path"
 Write-Debug "[move]: global: $global"
 
 if ($pkgs.Count -eq 0) {
-	Show-Help -Context "move"
+	Show-Help -Context "back"
 	exit 0
 }
 
 foreach ($pkg in $pkgs) {
-	move_pkg $pkg $path -global:$global
+	back_pkg $pkg -global:$global
 }
 
 
